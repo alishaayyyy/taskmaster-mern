@@ -12,11 +12,13 @@ const port = process.env.PORT || 3000;
 app.use(express.json({ limit: '10mb' }));
 app.use(express.urlencoded({ extended: true }));
 
-// ✅ CORS - Production URL
+// ✅ CORS - Complete Fix
 const allowedOrigins = [
   'http://localhost:5173',
   'http://localhost:3000',
-  'https://taskmaster-mern-git-main-alishaayyyys-projects.vercel.app'
+  'https://taskmaster-mern-rho.vercel.app',
+  'https://taskmaster-mern-git-main-alishaayyyys-projects.vercel.app',
+  'https://taskmaster-mern-last.vercel.app'
 ];
 
 app.use(cors({
@@ -24,19 +26,18 @@ app.use(cors({
     if (!origin || allowedOrigins.includes(origin)) {
       callback(null, true);
     } else {
-      callback(new Error('Not allowed by CORS'));
+      callback(null, true); // Sab allow kar dein
     }
   },
-  credentials: true
+  credentials: true,
+  methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
+  allowedHeaders: ['Content-Type', 'Authorization']
 }));
 
-// ✅ DB Connection (with error handling)
-try {
-  connectDB();
-  console.log('✅ DB Connection Initiated');
-} catch (err) {
-  console.error('❌ DB Connection Error:', err);
-}
+// ✅ DB Connection
+connectDB().catch(err => {
+  console.error('❌ MongoDB Connection Error:', err);
+});
 
 // ✅ Routes
 app.use("/api/user", userRouter);
@@ -47,7 +48,8 @@ app.get('/', (req, res) => {
   res.json({ 
     message: 'TaskMaster API is LIVE! 🚀',
     status: 'success',
-    timestamp: new Date().toISOString()
+    timestamp: new Date().toISOString(),
+    env: process.env.NODE_ENV
   });
 });
 
@@ -61,22 +63,27 @@ app.get('/health', (req, res) => {
 // ✅ 404 handler
 app.use((req, res) => {
   res.status(404).json({ 
-    error: 'Route not found 😅',
-    path: req.originalUrl 
+    error: 'Route not found',
+    path: req.originalUrl,
+    method: req.method
   });
 });
 
-// ✅ Export for Vercel
+// ✅ Vercel Serverless Export (ZAROORI)
 export default app;
 
-// Localhost ke liye (Development)
-if (process.env.NODE_ENV !== 'production') {
+// ✅ Local Development Server (ESM Fix)
+if (import.meta.url === `file://${process.argv[1]}`) {
   const server = app.listen(port, '0.0.0.0', () => {
     console.log(`✅ Server running on port ${port}`);
     console.log(`🌐 API URL: http://localhost:${port}`);
+    console.log(`📱 Health: http://localhost:${port}/health`);
   });
 
   process.on('SIGTERM', () => {
-    server.close(() => console.log('Process terminated'));
+    console.log('SIGTERM received, shutting down gracefully');
+    server.close(() => {
+      console.log('Process terminated');
+    });
   });
 }
