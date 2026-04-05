@@ -1,6 +1,14 @@
-// Connected Data base 
-import mongoose from "mongoose";
-export const connectDB = async()=>{
- await mongoose.connect('mongodb+srv://alisha:work123@cluster0.yiavo1v.mongodb.net/work123?retryWrites=true&w=majority').then(()=> console.log('DB Connected') );
+import mongoose from 'mongoose';
+import dotenv from 'dotenv';
 
-}
+dotenv.config();
+
+export const connectDB = async () => {  
+  try {
+    await mongoose.connect(process.env.MONGODB_URI);
+    console.log('✅ MongoDB Connected Successfully!');
+  } catch (error) {
+    console.error('❌ MongoDB Connection Error:', error);
+    process.exit(1);
+  }
+};

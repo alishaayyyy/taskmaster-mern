@@ -1,30 +1,43 @@
-import express from 'express'
+import express from 'express';
 import cors from 'cors';
-import 'dotenv/config'
-// import { connectDB } from './config/db';
-import{connectDB} from './config/db.js'
-import userRouter from './routes/userRoute.js'
-import taskRouter from './routes/taskRoute.js'
+import 'dotenv/config';
+import { connectDB } from './config/db.js';
+import userRouter from './routes/userRoute.js';
+import taskRouter from './routes/taskRoute.js';
+
 const app = express();
 const port = process.env.PORT || 3000;
 
-// Middle ware 
+// ✅ Middlewares
 app.use(express.json());
-app.use(cors());
-app.use(express.urlencoded({extended:true}));
+app.use(cors({
+  origin: process.env.FRONTEND_URL || 'http://localhost:5173',  
+  credentials: true
+}));
+app.use(express.urlencoded({ extended: true }));
 
-// DB connection here
+// ✅ DB Connection
 connectDB();
 
-// Routing users
+// ✅ Routes
 app.use("/api/user", userRouter);
-// routing tasks
 app.use("/api/tasks", taskRouter);
 
-app.get('/', (req,res)=>{
-  res.send('Api is working');
-})
+app.get('/', (req, res) => {
+  res.json({ 
+    message: 'TaskMaster API is LIVE! 🚀',
+    status: 'success',
+    timestamp: new Date().toISOString()
+  });
+});
+const server = app.listen(port, '0.0.0.0', () => {
+  console.log(`✅ Server running on port ${port}`);
+  console.log(`🌐 API URL: http://localhost:${port}`);
+});
 
-app.listen(port, ()=>{
-  console.log(`server is working on http://localhost:${port}`)
-})
+process.on('SIGTERM', () => {
+  console.log('SIGTERM received, shutting down gracefully');
+  server.close(() => {
+    console.log('Process terminated');
+  });
+});
