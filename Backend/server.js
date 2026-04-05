@@ -12,16 +12,31 @@ const port = process.env.PORT || 3000;
 app.use(express.json({ limit: '10mb' }));
 app.use(express.urlencoded({ extended: true }));
 
+// ✅ CORS - Production URL
+const allowedOrigins = [
+  'http://localhost:5173',
+  'http://localhost:3000',
+  'https://taskmaster-mern-git-main-alishaayyyys-projects.vercel.app'
+];
+
 app.use(cors({
-  origin: process.env.FRONTEND_URL || 
-          process.env.NODE_ENV === 'production' 
-            ? 'https://taskmaster-mern-git-main-alishaayyyys-projects.vercel.app/' 
-            : 'http://localhost:5173',
+  origin: function(origin, callback) {
+    if (!origin || allowedOrigins.includes(origin)) {
+      callback(null, true);
+    } else {
+      callback(new Error('Not allowed by CORS'));
+    }
+  },
   credentials: true
 }));
 
-// ✅ DB Connection
-connectDB();
+// ✅ DB Connection (with error handling)
+try {
+  connectDB();
+  console.log('✅ DB Connection Initiated');
+} catch (err) {
+  console.error('❌ DB Connection Error:', err);
+}
 
 // ✅ Routes
 app.use("/api/user", userRouter);
@@ -43,7 +58,7 @@ app.get('/health', (req, res) => {
   });
 });
 
-// ✅ 404 handler (FIXED - '*' hata dea gaya)
+// ✅ 404 handler
 app.use((req, res) => {
   res.status(404).json({ 
     error: 'Route not found 😅',
@@ -52,13 +67,16 @@ app.use((req, res) => {
 });
 
 // ✅ Export for Vercel
-const server = app.listen(port, '0.0.0.0', () => {
-  console.log(`✅ Server running on port ${port}`);
-  console.log(`🌐 API URL: http://localhost:${port}`);
-});
-
-process.on('SIGTERM', () => {
-  server.close(() => console.log('Process terminated'));
-});
-
 export default app;
+
+// Localhost ke liye (Development)
+if (process.env.NODE_ENV !== 'production') {
+  const server = app.listen(port, '0.0.0.0', () => {
+    console.log(`✅ Server running on port ${port}`);
+    console.log(`🌐 API URL: http://localhost:${port}`);
+  });
+
+  process.on('SIGTERM', () => {
+    server.close(() => console.log('Process terminated'));
+  });
+}
